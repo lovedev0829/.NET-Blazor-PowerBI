@@ -1,0 +1,78 @@
+@using BlazorReport.Client.Services
+@inject PowerBIService PowerBIService
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+@if (!_authCheckComplete)
+{
+    <!-- Show a spinner or "Loading..." until we know the user's auth status -->
+    <p>Loading, please wait...</p>
+}
+else if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else
+{
+    <!-- The container for embedding your Power BI report -->
+    <div id="reportContainer" style="width: 100%; height: 800px;"></div>
+}
+
+@code {
+    private string _embedToken;
+    private string _embedUrl;
+    private string _error;
+
+    private bool _isReportEmbedded;
+    private bool _isAuthenticated;
+    private bool _authCheckComplete; // We'll set this to true after checking auth.
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. We’re about to check user’s auth status.
+        _authCheckComplete = false;
+
+        // 2. Check if user is authenticated
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
+        // 3. If not authenticated, redirect to "/login"
+        if (!_isAuthenticated)
+        {
+            // If you want an immediate client-side redirect:
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            // We'll let this method end here so we don't attempt to load PBI data
+            _authCheckComplete = true;
+            return;
+        }
+
+        // 4. If user is authenticated, load the embed token & URL
+        try
+        {
+            var (token, url) = await PowerBIService.GetEmbedInfoAsync();
+            _embedToken = token;
+            _embedUrl = url;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+
+        // 5. Done checking auth & loading data
+        _authCheckComplete = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // If there's an error or no token, or the user is not authenticated, do nothing
+        if (!_authCheckComplete || !string.IsNullOrEmpty(_error) || !_isAuthenticated || string.IsNullOrEmpty(_embedToken))
+            return;
+
+        // Only embed once
+        if (!_isReportEmbedded)
+        {
+            _isReportEmbedded = true;
+            await JSRuntime.InvokeVoidAsync("embedPowerBIReport", _embedUrl, _embedToken);
+        }
+    }
+}

@@ -1,0 +1,23 @@
+﻿@inject AuthService AuthService
+
+@if (string.IsNullOrEmpty(AuthService.Username))
+{
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+}
+else
+{
+    <span>Hello, @AuthService.Username <a href="/logout">Logout</a></span>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnChange -= StateHasChanged;
+    }
+}
