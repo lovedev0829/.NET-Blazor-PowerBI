@@ -9,7 +9,6 @@ namespace BlazorReport.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class PowerBIController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;

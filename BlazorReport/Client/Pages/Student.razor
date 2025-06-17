@@ -1,0 +1,294 @@
+﻿@page "/student"
+@using BlazorReport.Shared
+@inject StudentService studentService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Student Search</PageTitle>
+
+<div class="container-fluid">
+    <!-- Telerik Tabs -->
+    <TelerikTabStrip ActiveTabIndex="0" TabPosition="@TabPosition.Top">
+        <TabStripTab Title="By Class Roster" Class="btn-primary">
+            <Content>
+                <!-- Main Content Area -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <span class="badge bg-secondary me-2">Step1</span>
+                                    Select Teacher & Class
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">School</label>
+                                        <TelerikDropDownList Data="@schoolOptions"
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@searchCriteria.School"
+                                                             Class="form-control" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Grade</label>
+                                        <TelerikDropDownList Data="@gradeOptions"
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@searchCriteria.Grade"
+                                                             Class="form-control" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Teacher</label>
+                                        <TelerikDropDownList Data="@teacherOptions"
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@searchCriteria.Teacher"
+                                                             Class="form-control" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Class</label>
+                                        <TelerikDropDownList Data="@classOptions"
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@searchCriteria.Class"
+                                                             Class="form-control" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="text-primary">Students Found: <span class="text-danger">@studentsFound</span></h6>
+                                        <div class="mt-3">
+                                            <button @onclick="@(async () => await SearchAndUpdateCount())"
+                                                    class="btn btn-info me-2">
+                                                Search Students
+                                            </button>
+                                            <button @onclick="@(async () => await ViewStudentList())"
+                                                    class="btn btn-primary"
+                                                    disabled="@(studentsFound == 0)">
+                                                View Student List
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6 class="text-primary">You will call a stored Procedure and we will return data for all the dropdowns</h6>
+                            <p class="mb-0">On the button click, we will return you a data table with all of the information required to populate the telerik data grid</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student List Section -->
+                @if (showStudentList && searchResult?.Students?.Any() == true)
+                {
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-0">Students Meeting Selection Criteria</h5>
+                                        <small>
+                                            Step 2 of 2 | Click the icon to view: Student's Interventions, Notes, Assessments, General Profile
+                                        </small>
+                                    </div>
+                                    <button @onclick="@(async () => await ChangeSelectionCriteria())"
+                                            class="btn btn-outline-light btn-sm">
+                                        Change Selection Criteria
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-3"><strong>School:</strong> @searchCriteria.School</div>
+                                        <div class="col-3"><strong>Grade:</strong> @searchCriteria.Grade</div>
+                                        <div class="col-3"><strong>Teacher:</strong> @searchCriteria.Teacher</div>
+                                        <div class="col-3"><strong>Class:</strong> @searchCriteria.Class</div>
+                                    </div>
+                                    <div class="mb-2"><strong>Found:</strong> @studentsFound</div>
+
+                                    <!-- Telerik DataGrid -->
+                                    <TelerikGrid Data="@searchResult.Students"
+                                                 Pageable="true"
+                                                 PageSize="50"
+                                                 Sortable="true"
+                                                 FilterMode="@GridFilterMode.FilterRow"
+                                                 Resizable="true"
+                                                 Class="table table-striped">
+                                        <GridColumns>
+                                            <GridColumn Field="StudentName" Title="Student Name" Width="200px" />
+                                            <GridColumn Field="School" Title="School" Width="100px" />
+                                            <GridColumn Field="Grade" Title="Grade" Width="80px" />
+                                            <GridColumn Field="SPED" Title="SPED" Width="80px" />
+                                            <GridColumn Field="ML" Title="ML" Width="80px" />
+                                            <GridColumn Field="Interventions" Title="Interventions" Width="120px" />
+                                            <GridColumn Field="IntvNotes" Title="Intv Notes" Width="120px" />
+                                            <GridColumn Field="Assessments" Title="Assessments" Width="120px" />
+                                            <GridColumn Title="Actions" Width="100px">
+                                                <Template>
+                                                    @{
+                                                        var student = (BlazorReport.Shared.Student)context;
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-primary me-1" title="View Profile">
+                                                        👤
+                                                    </button>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </Content>
+        </TabStripTab>
+        <TabStripTab Title="Search Individual" Class="btn-secondary">
+            <Content>
+                <div class="alert alert-info mt-3">
+                    <h6>Individual Student Search</h6>
+                    <p>This feature will allow searching for individual students by name or ID.</p>
+                </div>
+            </Content>
+        </TabStripTab>
+        <TabStripTab Title="Search ML" Class="btn-warning">
+            <Content>
+                <div class="alert alert-warning mt-3">
+                    <h6>Multi-Language Student Search</h6>
+                    <p>This feature will allow searching for ML (Multi-Language) students.</p>
+                </div>
+            </Content>
+        </TabStripTab>
+        <TabStripTab Title="Search SPED" Class="btn-info">
+            <Content>
+                <div class="alert alert-primary mt-3">
+                    <h6>SPED Student Search</h6>
+                    <p>This feature will allow searching for SPED (Special Education) students.</p>
+                </div>
+            </Content>
+        </TabStripTab>
+        <TabStripTab Title="MTSS" Class="btn-success">
+            <Content>
+                <div class="alert alert-success mt-3">
+                    <h6>MTSS (Multi-Tiered System of Supports)</h6>
+                    <p>This feature will provide MTSS related functionality.</p>
+                </div>
+            </Content>
+        </TabStripTab>
+    </TelerikTabStrip>
+</div>
+
+<!-- Loading indicator -->
+@if (isLoading)
+{
+    <TelerikLoaderContainer Visible="@isLoading" Text="Loading students..." />
+}
+
+@code {
+    private BlazorReport.Shared.StudentSearchCriteria searchCriteria = new();
+    private BlazorReport.Shared.StudentSearchResult? searchResult;
+    private List<BlazorReport.Shared.DropdownItem> schoolOptions = new();
+    private List<BlazorReport.Shared.DropdownItem> gradeOptions = new();
+    private List<BlazorReport.Shared.DropdownItem> teacherOptions = new();
+    private List<BlazorReport.Shared.DropdownItem> classOptions = new();
+    private bool showStudentList = false;
+    private bool isLoading = false;
+    private int studentsFound = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdownData();
+        await SearchStudents();
+    }
+
+    private async Task LoadDropdownData()
+    {
+        try
+        {
+            var dropdownData = await studentService.GetDropdownDataAsync();
+            if (dropdownData != null)
+            {
+                var jsonElement = (System.Text.Json.JsonElement)dropdownData;
+
+                // Parse schools
+                if (jsonElement.TryGetProperty("schools", out var schoolsProp))
+                {
+                    schoolOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(schoolsProp.GetRawText()) ?? new();
+                }
+                schoolOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
+
+                // Parse grades
+                if (jsonElement.TryGetProperty("grades", out var gradesProp))
+                {
+                    gradeOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(gradesProp.GetRawText()) ?? new();
+                }
+                gradeOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
+
+                // Parse teachers
+                if (jsonElement.TryGetProperty("teachers", out var teachersProp))
+                {
+                    teacherOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(teachersProp.GetRawText()) ?? new();
+                }
+                teacherOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
+
+                // Parse classes
+                if (jsonElement.TryGetProperty("classes", out var classesProp))
+                {
+                    classOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(classesProp.GetRawText()) ?? new();
+                }
+                classOptions.Insert(0, new DropdownItem { Value = "All Classes Selected", Text = "All Classes Selected" });
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error - you might want to show a notification
+            Console.WriteLine($"Error loading dropdown data: {ex.Message}");
+        }
+    }
+
+    private async Task SearchStudents()
+    {
+        isLoading = true;
+        try
+        {
+            searchResult = await studentService.SearchStudentsAsync(searchCriteria);
+            studentsFound = searchResult?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            Console.WriteLine($"Error searching students: {ex.Message}");
+            studentsFound = 0;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SearchAndUpdateCount()
+    {
+        await SearchStudents();
+        StateHasChanged();
+    }
+
+    private async Task ViewStudentList()
+    {
+        if (studentsFound > 0)
+        {
+            showStudentList = true;
+            await SearchStudents(); // Refresh data for the grid
+        }
+    }
+
+    private async Task ChangeSelectionCriteria()
+    {
+        showStudentList = false;
+        await Task.CompletedTask;
+    }
+
+    // TODO: Add methods for viewing student details when needed
+}

@@ -1,0 +1,24 @@
+@page "/login-callback"
+@using Microsoft.AspNetCore.WebUtilities
+@using BlazorReport.Client.Services
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@inject IJSRuntime jsr
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var token = query.Get("token");
+        var email = query.Get("email");
+
+        if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(email))
+        {
+            await jsr.InvokeVoidAsync("localStorage.setItem", "user", $"{email};{token}").ConfigureAwait(false);
+            AuthService.Login(email);
+        }
+
+        NavigationManager.NavigateTo("/");
+    }
+}

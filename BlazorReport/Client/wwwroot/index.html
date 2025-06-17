@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -12,10 +12,20 @@
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <script src="https://apis.google.com/js/platform.js"></script>
+    <script src="js/google-auth.js"></script>
+    <link href="https://blazor.cdn.telerik.com/blazor/9.0.0/kendo-theme-default/swatches/default-ocean-blue.css" rel="stylesheet" type="text/css" />
+    <script src="https://blazor.cdn.telerik.com/blazor/9.0.0/telerik-blazor.min.js" defer></script>
+    <link href="_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css" rel="stylesheet" />
+
 </head>
 
 <body>
-    <div id="app">Loading...</div>
+    <div id="app">
+        <div style="position:absolute; top:30vh; width:100%; text-align:center">
+            <h1>Loading...</h1>
+        </div>
+    </div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
