@@ -1,4 +1,4 @@
-﻿@page "/student"
+@page "/student"
 @using BlazorReport.Shared
 @inject StudentService studentService
 @inject IJSRuntime JSRuntime
@@ -6,17 +6,15 @@
 <PageTitle>Student Search</PageTitle>
 
 <div class="container-fluid">
-    <!-- Telerik Tabs -->
-    <TelerikTabStrip ActiveTabIndex="0" TabPosition="@TabPosition.Top">
-        <TabStripTab Title="By Class Roster" Class="btn-primary">
+    <TelerikTabStrip ActiveTabIndex="0">
+        <TabStripTab Title="By Class Roster">
             <Content>
-                <!-- Main Content Area -->
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
-                                    <span class="badge bg-secondary me-2">Step1</span>
+                                    <span class="badge bg-secondary me-2">Step 1</span>
                                     Select Teacher & Class
                                 </h5>
                             </div>
@@ -24,35 +22,38 @@
                                 <div class="row mb-3">
                                     <div class="col-md-3">
                                         <label class="form-label">School</label>
-                                        <TelerikDropDownList Data="@schoolOptions"
-                                                             TextField="Text"
-                                                             ValueField="Value"
-                                                             @bind-Value="@searchCriteria.School"
-                                                             Class="form-control" />
+                                        <TelerikDropDownList Data="@dropdownData.Schools"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           Value="@searchCriteria.School"
+                                                           ValueChanged="@((string value) => OnSchoolChanged(value))"
+                                                           Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Grade</label>
-                                        <TelerikDropDownList Data="@gradeOptions"
-                                                             TextField="Text"
-                                                             ValueField="Value"
-                                                             @bind-Value="@searchCriteria.Grade"
-                                                             Class="form-control" />
+                                        <TelerikDropDownList Data="@dropdownData.Grades"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           Value="@searchCriteria.Grade"
+                                                           ValueChanged="@((string value) => OnGradeChanged(value))"
+                                                           Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Teacher</label>
-                                        <TelerikDropDownList Data="@teacherOptions"
-                                                             TextField="Text"
-                                                             ValueField="Value"
-                                                             @bind-Value="@searchCriteria.Teacher"
-                                                             Class="form-control" />
+                                        <TelerikDropDownList Data="@dropdownData.Teachers"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           Value="@searchCriteria.Teacher"
+                                                           ValueChanged="@((string value) => OnTeacherChanged(value))"
+                                                           Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Class</label>
-                                        <TelerikDropDownList Data="@classOptions"
-                                                             TextField="Text"
-                                                             ValueField="Value"
-                                                             @bind-Value="@searchCriteria.Class"
-                                                             Class="form-control" />
+                                        <TelerikDropDownList Data="@dropdownData.Classes"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@searchCriteria.Class"
+                                                           Class="form-control" />
                                     </div>
                                 </div>
 
@@ -60,13 +61,10 @@
                                     <div class="col-12">
                                         <h6 class="text-primary">Students Found: <span class="text-danger">@studentsFound</span></h6>
                                         <div class="mt-3">
-                                            <button @onclick="@(async () => await SearchAndUpdateCount())"
-                                                    class="btn btn-info me-2">
+                                            <button @onclick="UpdateStudentCount" class="btn btn-info me-2">
                                                 Search Students
                                             </button>
-                                            <button @onclick="@(async () => await ViewStudentList())"
-                                                    class="btn btn-primary"
-                                                    disabled="@(studentsFound == 0)">
+                                            <button @onclick="ViewStudentList" class="btn btn-primary" >
                                                 View Student List
                                             </button>
                                         </div>
@@ -75,15 +73,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-info">
-                            <h6 class="text-primary">You will call a stored Procedure and we will return data for all the dropdowns</h6>
-                            <p class="mb-0">On the button click, we will return you a data table with all of the information required to populate the telerik data grid</p>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Student List Section -->
                 @if (showStudentList && searchResult?.Students?.Any() == true)
                 {
                     <div class="row mt-4">
@@ -92,12 +83,9 @@
                                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                                     <div>
                                         <h5 class="mb-0">Students Meeting Selection Criteria</h5>
-                                        <small>
-                                            Step 2 of 2 | Click the icon to view: Student's Interventions, Notes, Assessments, General Profile
-                                        </small>
+                                        <small>Step 2 of 2 | Student List Results</small>
                                     </div>
-                                    <button @onclick="@(async () => await ChangeSelectionCriteria())"
-                                            class="btn btn-outline-light btn-sm">
+                                    <button @onclick="ChangeSelectionCriteria" class="btn btn-outline-light btn-sm">
                                         Change Selection Criteria
                                     </button>
                                 </div>
@@ -108,35 +96,25 @@
                                         <div class="col-3"><strong>Teacher:</strong> @searchCriteria.Teacher</div>
                                         <div class="col-3"><strong>Class:</strong> @searchCriteria.Class</div>
                                     </div>
-                                    <div class="mb-2"><strong>Found:</strong> @studentsFound</div>
+                                    <div class="mb-2"><strong>Found:</strong> @studentsFound students</div>
 
-                                    <!-- Telerik DataGrid -->
                                     <TelerikGrid Data="@searchResult.Students"
-                                                 Pageable="true"
-                                                 PageSize="50"
-                                                 Sortable="true"
-                                                 FilterMode="@GridFilterMode.FilterRow"
-                                                 Resizable="true"
-                                                 Class="table table-striped">
+                                               Pageable="true"
+                                               PageSize="50"
+                                               Sortable="true"
+                                               FilterMode="@GridFilterMode.FilterRow"
+                                               Resizable="true"
+                                               Class="table-striped">
                                         <GridColumns>
-                                            <GridColumn Field="StudentName" Title="Student Name" Width="200px" />
-                                            <GridColumn Field="School" Title="School" Width="100px" />
-                                            <GridColumn Field="Grade" Title="Grade" Width="80px" />
-                                            <GridColumn Field="SPED" Title="SPED" Width="80px" />
-                                            <GridColumn Field="ML" Title="ML" Width="80px" />
-                                            <GridColumn Field="Interventions" Title="Interventions" Width="120px" />
-                                            <GridColumn Field="IntvNotes" Title="Intv Notes" Width="120px" />
-                                            <GridColumn Field="Assessments" Title="Assessments" Width="120px" />
-                                            <GridColumn Title="Actions" Width="100px">
-                                                <Template>
-                                                    @{
-                                                        var student = (BlazorReport.Shared.Student)context;
-                                                    }
-                                                    <button class="btn btn-sm btn-outline-primary me-1" title="View Profile">
-                                                        👤
-                                                    </button>
-                                                </Template>
-                                            </GridColumn>
+                                            <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
+                                            <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
+                                            <GridColumn Field="@nameof(StudentInfo.GRADE)" Title="Grade" Width="80px" />
+                                            <GridColumn Field="@nameof(StudentInfo.HOMEROOM)" Title="Homeroom" Width="120px" />
+                                            <GridColumn Field="@nameof(StudentInfo.SEX)" Title="Gender" Width="80px" />
+                                            <GridColumn Field="@nameof(StudentInfo.ETHNIC)" Title="Ethnicity" Width="100px" />
+                                            <GridColumn Field="@nameof(StudentInfo.SPECIAL_ED)" Title="Special Ed" Width="100px" />
+                                            <GridColumn Field="@nameof(StudentInfo.ESL_CODE)" Title="ESL" Width="80px" />
+                                            <GridColumn Field="@nameof(StudentInfo.IS_504)" Title="504 Plan" Width="80px" />
                                         </GridColumns>
                                     </TelerikGrid>
                                 </div>
@@ -146,121 +124,402 @@
                 }
             </Content>
         </TabStripTab>
-        <TabStripTab Title="Search Individual" Class="btn-secondary">
+
+        <TabStripTab Title="Individual Search">
             <Content>
-                <div class="alert alert-info mt-3">
-                    <h6>Individual Student Search</h6>
-                    <p>This feature will allow searching for individual students by name or ID.</p>
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <span class="badge bg-secondary me-2">Quick Search</span>
+                                    Find Individual Student
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Search Type</label>
+                                        <TelerikDropDownList Data="@searchTypes"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@individualSearchCriteria.SearchType"
+                                                           Class="form-control" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Search Term</label>
+                                        <input type="text" @bind="individualSearchCriteria.SearchTerm"
+                                               @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchIndividualStudent(); })"
+                                               class="form-control" 
+                                               placeholder="Enter name, ID, email, or homeroom..." />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div class="d-grid">
+                                            <button @onclick="SearchIndividualStudent" class="btn btn-info">
+                                                Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(individualSearchMessage))
+                                {
+                                    <div class="alert alert-info">
+                                        @individualSearchMessage
+                                    </div>
+                                }
+
+                                @if (individualSearchResult?.Students?.Any() == true)
+                                {
+                                    <div class="mt-4">
+                                        <h6 class="text-primary mb-3">Search Results</h6>
+                                        <TelerikGrid Data="@individualSearchResult.Students"
+                                                   Pageable="true"
+                                                   PageSize="20"
+                                                   Sortable="true"
+                                                   FilterMode="@GridFilterMode.FilterRow"
+                                                   Resizable="true"
+                                                   Class="table-striped">
+                                            <GridColumns>
+                                                <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.GRADE)" Title="Grade" Width="80px" />
+                                                <GridColumn Field="@nameof(StudentInfo.HOMEROOM)" Title="Homeroom" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.SEX)" Title="Gender" Width="80px" />
+                                                <GridColumn Field="@nameof(StudentInfo.ETHNIC)" Title="Ethnicity" Width="100px" />
+                                                <GridColumn Field="@nameof(StudentInfo.SPECIAL_ED)" Title="Special Ed" Width="100px" />
+                                                <GridColumn Field="@nameof(StudentInfo.ESL_CODE)" Title="ESL" Width="80px" />
+                                                <GridColumn Field="@nameof(StudentInfo.IS_504)" Title="504 Plan" Width="80px" />
+                                            </GridColumns>
+                                        </TelerikGrid>
+                                    </div>
+                                }
+
+                                <div class="mt-3">
+                                    <button @onclick="ClearIndividualSearch" class="btn btn-outline-secondary">
+                                        Clear Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </Content>
         </TabStripTab>
-        <TabStripTab Title="Search ML" Class="btn-warning">
+
+        <TabStripTab Title="ESL Students">
             <Content>
-                <div class="alert alert-warning mt-3">
-                    <h6>Multi-Language Student Search</h6>
-                    <p>This feature will allow searching for ML (Multi-Language) students.</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <span class="badge bg-secondary me-2">Program Search</span>
+                                    ESL Students
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">School</label>
+                                        <TelerikDropDownList Data="@dropdownData.Schools"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@eslSearchSchool"
+                                                           Class="form-control" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Grade</label>
+                                        <TelerikDropDownList Data="@dropdownData.Grades"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@eslSearchGrade"
+                                                           Class="form-control" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="text-success">ESL Students Found: <span class="text-danger">@eslStudentsFound</span></h6>
+                                        <div class="mt-3">
+                                            <button @onclick="SearchESLStudents" class="btn btn-success">
+                                                Search ESL Students
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (eslSearchResult?.Students?.Any() == true)
+                                {
+                                    <div class="mt-4">
+                                        <TelerikGrid Data="@eslSearchResult.Students"
+                                                   Pageable="true"
+                                                   PageSize="20"
+                                                   Sortable="true"
+                                                   FilterMode="@GridFilterMode.FilterRow"
+                                                   Resizable="true"
+                                                   Class="table-striped">
+                                            <GridColumns>
+                                                <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.GRADE)" Title="Grade" Width="80px" />
+                                                <GridColumn Field="@nameof(StudentInfo.HOMEROOM)" Title="Homeroom" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.ESL_CODE)" Title="ESL Code" Width="100px" />
+                                            </GridColumns>
+                                        </TelerikGrid>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </Content>
         </TabStripTab>
-        <TabStripTab Title="Search SPED" Class="btn-info">
+
+        <TabStripTab Title="SPED Students">
             <Content>
-                <div class="alert alert-primary mt-3">
-                    <h6>SPED Student Search</h6>
-                    <p>This feature will allow searching for SPED (Special Education) students.</p>
-                </div>
-            </Content>
-        </TabStripTab>
-        <TabStripTab Title="MTSS" Class="btn-success">
-            <Content>
-                <div class="alert alert-success mt-3">
-                    <h6>MTSS (Multi-Tiered System of Supports)</h6>
-                    <p>This feature will provide MTSS related functionality.</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <span class="badge bg-secondary me-2">Program Search</span>
+                                    Special Education Students
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">School</label>
+                                        <TelerikDropDownList Data="@dropdownData.Schools"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@spedSearchSchool"
+                                                           Class="form-control" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Grade</label>
+                                        <TelerikDropDownList Data="@dropdownData.Grades"
+                                                           TextField="Text"
+                                                           ValueField="Value"
+                                                           @bind-Value="@spedSearchGrade"
+                                                           Class="form-control" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="text-warning">SPED Students Found: <span class="text-danger">@spedStudentsFound</span></h6>
+                                        <div class="mt-3">
+                                            <button @onclick="SearchSPEDStudents" class="btn btn-warning text-dark">
+                                                Search SPED Students
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (spedSearchResult?.Students?.Any() == true)
+                                {
+                                    <div class="mt-4">
+                                        <TelerikGrid Data="@spedSearchResult.Students"
+                                                   Pageable="true"
+                                                   PageSize="20"
+                                                   Sortable="true"
+                                                   FilterMode="@GridFilterMode.FilterRow"
+                                                   Resizable="true"
+                                                   Class="table-striped">
+                                            <GridColumns>
+                                                <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.GRADE)" Title="Grade" Width="80px" />
+                                                <GridColumn Field="@nameof(StudentInfo.HOMEROOM)" Title="Homeroom" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.SPECIAL_ED)" Title="Special Ed Code" Width="120px" />
+                                                <GridColumn Field="@nameof(StudentInfo.IS_504)" Title="504 Plan" Width="100px" />
+                                            </GridColumns>
+                                        </TelerikGrid>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </Content>
         </TabStripTab>
     </TelerikTabStrip>
 </div>
 
-<!-- Loading indicator -->
 @if (isLoading)
 {
-    <TelerikLoaderContainer Visible="@isLoading" Text="Loading students..." />
+    <div class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
-    private BlazorReport.Shared.StudentSearchCriteria searchCriteria = new();
-    private BlazorReport.Shared.StudentSearchResult? searchResult;
-    private List<BlazorReport.Shared.DropdownItem> schoolOptions = new();
-    private List<BlazorReport.Shared.DropdownItem> gradeOptions = new();
-    private List<BlazorReport.Shared.DropdownItem> teacherOptions = new();
-    private List<BlazorReport.Shared.DropdownItem> classOptions = new();
+    // Main search variables
+    private StudentSearchCriteria searchCriteria = new();
+    private StudentSearchResult? searchResult;
+    private DropdownData dropdownData = new();
     private bool showStudentList = false;
     private bool isLoading = false;
     private int studentsFound = 0;
 
+    // Individual search variables
+    private IndividualStudentSearchCriteria individualSearchCriteria = new();
+    private StudentSearchResult? individualSearchResult;
+    private string individualSearchMessage = string.Empty;
+
+    // Search type options for individual search
+    private List<DropdownItem> searchTypes = new()
+    {
+        new() { Value = "Name", Text = "Name" },
+        new() { Value = "ID", Text = "Student ID" },
+        new() { Value = "Email", Text = "Email" },
+        new() { Value = "Homeroom", Text = "Homeroom" }
+    };
+
+    // ESL search variables
+    private string eslSearchSchool = "All";
+    private string eslSearchGrade = "All";
+    private StudentSearchResult? eslSearchResult;
+    private int eslStudentsFound = 0;
+
+    // SPED search variables
+    private string spedSearchSchool = "All";
+    private string spedSearchGrade = "All";
+    private StudentSearchResult? spedSearchResult;
+    private int spedStudentsFound = 0;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadDropdownData();
-        await SearchStudents();
     }
 
     private async Task LoadDropdownData()
     {
+        isLoading = true;
         try
         {
-            var dropdownData = await studentService.GetDropdownDataAsync();
-            if (dropdownData != null)
+            var data = await studentService.GetDropdownDataAsync();
+            if (data != null)
             {
-                var jsonElement = (System.Text.Json.JsonElement)dropdownData;
-
-                // Parse schools
-                if (jsonElement.TryGetProperty("schools", out var schoolsProp))
-                {
-                    schoolOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(schoolsProp.GetRawText()) ?? new();
-                }
-                schoolOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
-
-                // Parse grades
-                if (jsonElement.TryGetProperty("grades", out var gradesProp))
-                {
-                    gradeOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(gradesProp.GetRawText()) ?? new();
-                }
-                gradeOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
-
-                // Parse teachers
-                if (jsonElement.TryGetProperty("teachers", out var teachersProp))
-                {
-                    teacherOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(teachersProp.GetRawText()) ?? new();
-                }
-                teacherOptions.Insert(0, new DropdownItem { Value = "All", Text = "All" });
-
-                // Parse classes
-                if (jsonElement.TryGetProperty("classes", out var classesProp))
-                {
-                    classOptions = System.Text.Json.JsonSerializer.Deserialize<List<DropdownItem>>(classesProp.GetRawText()) ?? new();
-                }
-                classOptions.Insert(0, new DropdownItem { Value = "All Classes Selected", Text = "All Classes Selected" });
+                dropdownData = data;
+                
+                // "All" options are already included in the stored procedure results
+                // No need to add them here - this was causing duplicates
             }
         }
         catch (Exception ex)
         {
-            // Handle error - you might want to show a notification
             Console.WriteLine($"Error loading dropdown data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private async Task SearchStudents()
+    // Cascading dropdown change handlers - Updated to use ValueChanged event
+    private async Task OnSchoolChanged(string school)
+    {
+        searchCriteria.School = school;
+        
+        // Reset dependent dropdowns to "All"
+        searchCriteria.Grade = "All";
+        searchCriteria.Teacher = "All";
+        searchCriteria.Class = "All";
+        
+        // Load grades for selected school
+        try
+        {
+            isLoading = true;
+            dropdownData.Grades = await studentService.GetCascadingGradesAsync(school);
+            
+            // Reset teachers and classes to show only "All" option
+            dropdownData.Teachers = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Teachers" } };
+            dropdownData.Classes = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading grades for school {school}: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task OnGradeChanged(string grade)
+    {
+        searchCriteria.Grade = grade;
+        
+        // Reset dependent dropdowns to "All"
+        searchCriteria.Teacher = "All";
+        searchCriteria.Class = "All";
+        
+        // Load teachers for selected school and grade
+        try
+        {
+            isLoading = true;
+            dropdownData.Teachers = await studentService.GetCascadingTeachersAsync(searchCriteria.School, grade);
+            
+            // Reset classes to show only "All" option
+            dropdownData.Classes = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading teachers for school {searchCriteria.School}, grade {grade}: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task OnTeacherChanged(string teacher)
+    {
+        searchCriteria.Teacher = teacher;
+        
+        // Reset dependent dropdown to "All"
+        searchCriteria.Class = "All";
+        
+        // Load classes for selected school, grade, and teacher
+        try
+        {
+            isLoading = true;
+            dropdownData.Classes = await studentService.GetCascadingClassesAsync(searchCriteria.School, searchCriteria.Grade, teacher);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading classes for school {searchCriteria.School}, grade {searchCriteria.Grade}, teacher {teacher}: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task UpdateStudentCount()
     {
         isLoading = true;
         try
         {
-            searchResult = await studentService.SearchStudentsAsync(searchCriteria);
-            studentsFound = searchResult?.TotalCount ?? 0;
+            studentsFound = await studentService.GetStudentCountAsync(searchCriteria);
         }
         catch (Exception ex)
         {
-            // Handle error
-            Console.WriteLine($"Error searching students: {ex.Message}");
+            Console.WriteLine($"Error getting student count: {ex.Message}");
             studentsFound = 0;
         }
         finally
@@ -269,26 +528,132 @@
         }
     }
 
-    private async Task SearchAndUpdateCount()
-    {
-        await SearchStudents();
-        StateHasChanged();
-    }
-
     private async Task ViewStudentList()
     {
-        if (studentsFound > 0)
+       
+            isLoading = true;
+            try
+            {
+                searchResult = await studentService.SearchStudentsAsync(searchCriteria);
+                showStudentList = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error searching students: {ex.Message}");
+            }
+            finally
+            {
+                isLoading = false;
+            }
+    }
+
+    private void ChangeSelectionCriteria()
+    {
+        showStudentList = false;
+        searchResult = null;
+        studentsFound = 0;
+    }
+
+    // Individual search methods
+    private async Task SearchIndividualStudent()
+    {
+        if (string.IsNullOrWhiteSpace(individualSearchCriteria.SearchTerm))
         {
-            showStudentList = true;
-            await SearchStudents(); // Refresh data for the grid
+            individualSearchMessage = "Please enter a search term.";
+            return;
+        }
+
+        isLoading = true;
+        individualSearchMessage = string.Empty;
+        try
+        {
+            individualSearchResult = await studentService.SearchIndividualStudentAsync(individualSearchCriteria);
+            
+            if (individualSearchResult.Success)
+            {
+                individualSearchMessage = $"Found {individualSearchResult.TotalCount} student(s) matching '{individualSearchCriteria.SearchTerm}'";
+            }
+            else
+            {
+                individualSearchMessage = individualSearchResult.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            individualSearchMessage = $"Error searching students: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private async Task ChangeSelectionCriteria()
+    private void ClearIndividualSearch()
     {
-        showStudentList = false;
-        await Task.CompletedTask;
+        individualSearchCriteria = new IndividualStudentSearchCriteria();
+        individualSearchResult = null;
+        individualSearchMessage = string.Empty;
     }
 
-    // TODO: Add methods for viewing student details when needed
+    // ESL search methods
+    private async Task SearchESLStudents()
+    {
+        isLoading = true;
+        try
+        {
+            eslSearchResult = await studentService.SearchStudentsByProgramAsync("ESL", eslSearchSchool, eslSearchGrade);
+            eslStudentsFound = eslSearchResult?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error searching ESL students: {ex.Message}");
+            eslStudentsFound = 0;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // SPED search methods
+    private async Task SearchSPEDStudents()
+    {
+        isLoading = true;
+        try
+        {
+            spedSearchResult = await studentService.SearchStudentsByProgramAsync("SPED", spedSearchSchool, spedSearchGrade);
+            spedStudentsFound = spedSearchResult?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error searching SPED students: {ex.Message}");
+            spedStudentsFound = 0;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 }
+
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+</style>

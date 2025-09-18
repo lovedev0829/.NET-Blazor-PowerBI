@@ -1,4 +1,5 @@
 using BlazorReport.Shared;
+using BlazorReport.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlazorReport.Server.Controllers
@@ -7,67 +8,31 @@ namespace BlazorReport.Server.Controllers
     [Route("api/[controller]")]
     public class StudentController : ControllerBase
     {
-        // Mock data for demonstration - replace with actual database operations
-        private static readonly List<Student> MockStudents = new()
+        private readonly IStudentDataService _studentDataService;
+        private readonly ILogger<StudentController> _logger;
+
+        public StudentController(IStudentDataService studentDataService, ILogger<StudentController> logger)
         {
-            new Student { Id = 1, StudentName = "Anika", School = "MMS", Grade = 6, Teacher = "Aaron, Andrea", Class = "Math 6A", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 2, StudentName = "Angel", School = "MMS", Grade = 6, Teacher = "Aaron, Andrea", Class = "Math 6A", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 3, StudentName = "Blake", School = "MMS", Grade = 7, Teacher = "Aaron, Andrea", Class = "Math 7A", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 4, StudentName = "Bobby", School = "MMS", Grade = 6, Teacher = "Aaron, Andrea", Class = "Math 6B", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 5, StudentName = "Brogan", School = "MMS", Grade = 8, Teacher = "Aaron, Andrea", Class = "Math 8A", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 6, StudentName = "Brooke", School = "MMS", Grade = 8, Teacher = "Aaron, Andrea", Class = "Math 8B", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" },
-            new Student { Id = 7, StudentName = "Bryson", School = "MMS", Grade = 6, Teacher = "Aaron, Andrea", Class = "Math 6A", SPED = "✓", ML = "", Interventions = "✓", IntvNotes = "✓", Assessments = "", Profile = "" },
-            new Student { Id = 8, StudentName = "Emilie", School = "MMS", Grade = 8, Teacher = "Aaron, Andrea", Class = "Math 8A", SPED = "", ML = "", Interventions = "", IntvNotes = "", Assessments = "", Profile = "" }
-        };
+            _studentDataService = studentDataService;
+            _logger = logger;
+        }
 
         [HttpPost("search")]
         public async Task<ActionResult<StudentSearchResult>> SearchStudents([FromBody] StudentSearchCriteria criteria)
         {
             try
             {
-                await Task.Delay(100); // Simulate database delay
-
-                var filteredStudents = MockStudents.AsQueryable();
-
-                // Apply filters based on criteria
-                if (criteria.School != "All")
-                {
-                    filteredStudents = filteredStudents.Where(s => s.School == criteria.School);
-                }
-
-                if (criteria.Grade != "All")
-                {
-                    if (int.TryParse(criteria.Grade, out int grade))
-                    {
-                        filteredStudents = filteredStudents.Where(s => s.Grade == grade);
-                    }
-                }
-
-                if (criteria.Teacher != "All")
-                {
-                    filteredStudents = filteredStudents.Where(s => s.Teacher.Contains(criteria.Teacher));
-                }
-
-                if (criteria.Class != "All Classes Selected")
-                {
-                    filteredStudents = filteredStudents.Where(s => s.Class == criteria.Class);
-                }
-
-                var result = filteredStudents.ToList();
-
-                return Ok(new StudentSearchResult
-                {
-                    Students = result,
-                    TotalCount = result.Count,
-                    Success = true,
-                    Message = "Search completed successfully"
-                });
+                _logger.LogInformation("Searching students with criteria: {@Criteria}", criteria);
+                
+                var result = await _studentDataService.SearchStudentsAsync(criteria);
+                return Ok(result);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error searching students");
                 return BadRequest(new StudentSearchResult
                 {
-                    Students = new List<Student>(),
+                    Students = new List<StudentInfo>(),
                     TotalCount = 0,
                     Success = false,
                     Message = $"Error occurred: {ex.Message}"
@@ -76,39 +41,51 @@ namespace BlazorReport.Server.Controllers
         }
 
         [HttpGet("dropdown-data")]
-        public async Task<ActionResult<object>> GetDropdownData()
+        public async Task<ActionResult<DropdownData>> GetDropdownData()
         {
             try
             {
-                await Task.Delay(50); // Simulate database delay
-
-                var schools = MockStudents.Select(s => s.School).Distinct().OrderBy(s => s).ToList();
-                var grades = MockStudents.Select(s => s.Grade).Distinct().OrderBy(g => g).ToList();
-                var teachers = MockStudents.Select(s => s.Teacher).Distinct().OrderBy(t => t).ToList();
-                var classes = MockStudents.Select(s => s.Class).Distinct().OrderBy(c => c).ToList();
-
-                return Ok(new
-                {
-                    Schools = schools.Select(s => new DropdownItem { Value = s, Text = s }).ToList(),
-                    Grades = grades.Select(g => new DropdownItem { Value = g.ToString(), Text = g.ToString() }).ToList(),
-                    Teachers = teachers.Select(t => new DropdownItem { Value = t, Text = t }).ToList(),
-                    Classes = classes.Select(c => new DropdownItem { Value = c, Text = c }).ToList()
-                });
+                _logger.LogInformation("Getting dropdown data");
+                
+                var result = await _studentDataService.GetDropdownDataAsync();
+                return Ok(result);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting dropdown data");
                 return BadRequest(new { Message = $"Error occurred: {ex.Message}" });
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Student>> GetStudent(int id)
+        [HttpPost("count")]
+        public async Task<ActionResult<int>> GetStudentCount([FromBody] StudentSearchCriteria criteria)
         {
             try
             {
-                await Task.Delay(50); // Simulate database delay
+                _logger.LogInformation("Getting student count with criteria: {@Criteria}", criteria);
+                
+                var count = await _studentDataService.GetStudentCountAsync(criteria);
+                return Ok(count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting student count");
+                return BadRequest(0);
+            }
+        }
 
-                var student = MockStudents.FirstOrDefault(s => s.Id == id);
+        [HttpGet("{id}")]
+        public async Task<ActionResult<StudentInfo>> GetStudent(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Getting student with ID: {Id}", id);
+                
+                // For now, we'll search by RowID
+                var criteria = new StudentSearchCriteria();
+                var result = await _studentDataService.SearchStudentsAsync(criteria);
+                var student = result.Students.FirstOrDefault(s => s.RowID == id);
+                
                 if (student == null)
                 {
                     return NotFound();
@@ -118,7 +95,162 @@ namespace BlazorReport.Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting student with ID: {Id}", id);
                 return BadRequest(new { Message = $"Error occurred: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("search-individual")]
+        public async Task<ActionResult<StudentSearchResult>> SearchIndividualStudent([FromBody] IndividualStudentSearchCriteria criteria)
+        {
+            try
+            {
+                _logger.LogInformation("Searching individual student with criteria: {@Criteria}", criteria);
+                
+                var result = await _studentDataService.SearchIndividualStudentAsync(criteria);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching individual student");
+                return BadRequest(new StudentSearchResult
+                {
+                    Students = new List<StudentInfo>(),
+                    TotalCount = 0,
+                    Success = false,
+                    Message = $"Error occurred: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpGet("{studentId}/detail")]
+        public async Task<ActionResult<StudentDetailInfo>> GetStudentDetail(int studentId)
+        {
+            try
+            {
+                _logger.LogInformation("Getting student detail for ID: {StudentId}", studentId);
+                
+                var result = await _studentDataService.GetStudentDetailAsync(studentId);
+                
+                if (result == null)
+                {
+                    return NotFound($"Student with ID {studentId} not found");
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting student detail for ID: {StudentId}", studentId);
+                return BadRequest(new { Message = $"Error occurred: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("search-by-program")]
+        public async Task<ActionResult<StudentSearchResult>> SearchStudentsByProgram(
+            [FromQuery] string programType, 
+            [FromQuery] string school = "All", 
+            [FromQuery] string grade = "All")
+        {
+            try
+            {
+                _logger.LogInformation("Searching students by program: {ProgramType}, School: {School}, Grade: {Grade}", 
+                    programType, school, grade);
+                
+                var result = await _studentDataService.SearchStudentsByProgramAsync(programType, school, grade);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching students by program");
+                return BadRequest(new StudentSearchResult
+                {
+                    Students = new List<StudentInfo>(),
+                    TotalCount = 0,
+                    Success = false,
+                    Message = $"Error occurred: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpGet("diagnose-database")]
+        public async Task<ActionResult<Dictionary<string, string>>> DiagnoseDatabase()
+        {
+            try
+            {
+                _logger.LogInformation("Running database diagnostics");
+                
+                var diagnostics = await _studentDataService.DiagnoseDatabaseAsync();
+                return Ok(diagnostics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error running database diagnostics");
+                return BadRequest(new Dictionary<string, string>
+                {
+                    {"Error", ex.Message},
+                    {"Status", "Failed to run diagnostics"}
+                });
+            }
+        }
+
+        [HttpGet("cascading-grades")]
+        public async Task<ActionResult<List<DropdownItem>>> GetCascadingGrades([FromQuery] string school = "All")
+        {
+            try
+            {
+                _logger.LogInformation("Getting cascading grades for school: {School}", school);
+                
+                var result = await _studentDataService.GetCascadingGradesAsync(school);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cascading grades for school: {School}", school);
+                return BadRequest(new List<DropdownItem> 
+                { 
+                    new DropdownItem { Value = "All", Text = "All Grades" } 
+                });
+            }
+        }
+
+        [HttpGet("cascading-teachers")]
+        public async Task<ActionResult<List<DropdownItem>>> GetCascadingTeachers([FromQuery] string school = "All", [FromQuery] string grade = "All")
+        {
+            try
+            {
+                _logger.LogInformation("Getting cascading teachers for school: {School}, grade: {Grade}", school, grade);
+                
+                var result = await _studentDataService.GetCascadingTeachersAsync(school, grade);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cascading teachers for school: {School}, grade: {Grade}", school, grade);
+                return BadRequest(new List<DropdownItem> 
+                { 
+                    new DropdownItem { Value = "All", Text = "All Teachers" } 
+                });
+            }
+        }
+
+        [HttpGet("cascading-classes")]
+        public async Task<ActionResult<List<DropdownItem>>> GetCascadingClasses([FromQuery] string school = "All", [FromQuery] string grade = "All", [FromQuery] string teacher = "All")
+        {
+            try
+            {
+                _logger.LogInformation("Getting cascading classes for school: {School}, grade: {Grade}, teacher: {Teacher}", school, grade, teacher);
+                
+                var result = await _studentDataService.GetCascadingClassesAsync(school, grade, teacher);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cascading classes for school: {School}, grade: {Grade}, teacher: {Teacher}", school, grade, teacher);
+                return BadRequest(new List<DropdownItem> 
+                { 
+                    new DropdownItem { Value = "All", Text = "All Classes" } 
+                });
             }
         }
     }

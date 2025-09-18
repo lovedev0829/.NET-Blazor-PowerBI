@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer; // NOTE: THIS LINE OF CODE IS NEWLY ADDED
 using Microsoft.IdentityModel.Tokens; // NOTE: THIS LINE OF CODE IS NEWLY ADDED
 using BlazorReport.Server.Models;
+using BlazorReport.Server.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddTransient<IUserDatabase, UserDatabase>();  // NOTE: LOCAL AUTHENTICATION ADDED HERE; AddTransient() IS OK TO USE BECAUSE STATE IS SAVED TO THE DRIVE
+builder.Services.AddScoped<IStudentDataService, StudentDataService>(); // Student data service for database operations
+builder.Services.AddScoped<ITeacherDataService, TeacherDataService>(); // Teacher data service for database operations
 
 // NOTE: the following block of code is newly added
 builder.Services.AddAuthentication(options =>
