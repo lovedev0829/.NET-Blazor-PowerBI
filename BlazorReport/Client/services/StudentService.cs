@@ -191,61 +191,48 @@ namespace BlazorReport.Client.Services
         }
 
         // Cascading dropdown methods
-        public async Task<List<DropdownItem>> GetCascadingGradesAsync(string school)
+
+
+        public async Task<List<DropdownItem>> GetCascadingDropdownDataAsync(string level, string? school = null, string? grade = null, string? teacher = null)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/student/cascading-grades?school={Uri.EscapeDataString(school)}");
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(school)) queryParams.Add($"school={Uri.EscapeDataString(school)}");
+                if (!string.IsNullOrEmpty(grade)) queryParams.Add($"grade={Uri.EscapeDataString(grade)}");
+                if (!string.IsNullOrEmpty(teacher)) queryParams.Add($"teacher={Uri.EscapeDataString(teacher)}");
+                
+                var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+                var url = $"api/student/cascading-dropdown/{level}{queryString}";
+                
+                var response = await _httpClient.GetAsync(url);
                 
                 if (response.IsSuccessStatusCode)
                 {
                     return await response.Content.ReadFromJsonAsync<List<DropdownItem>>() ?? new List<DropdownItem>();
                 }
                 
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Grades" } };
+                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = $"All {level}" } };
             }
             catch (Exception)
             {
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Grades" } };
+                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = $"All {level}" } };
             }
+        }
+
+        public async Task<List<DropdownItem>> GetCascadingGradesAsync(string school)
+        {
+            return await GetCascadingDropdownDataAsync("Grades", school);
         }
 
         public async Task<List<DropdownItem>> GetCascadingTeachersAsync(string school, string grade)
         {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/student/cascading-teachers?school={Uri.EscapeDataString(school)}&grade={Uri.EscapeDataString(grade)}");
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<List<DropdownItem>>() ?? new List<DropdownItem>();
-                }
-                
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Teachers" } };
-            }
-            catch (Exception)
-            {
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Teachers" } };
-            }
+            return await GetCascadingDropdownDataAsync("Teachers", school, grade);
         }
 
         public async Task<List<DropdownItem>> GetCascadingClassesAsync(string school, string grade, string teacher)
         {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/student/cascading-classes?school={Uri.EscapeDataString(school)}&grade={Uri.EscapeDataString(grade)}&teacher={Uri.EscapeDataString(teacher)}");
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<List<DropdownItem>>() ?? new List<DropdownItem>();
-                }
-                
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
-            }
-            catch (Exception)
-            {
-                return new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
-            }
+            return await GetCascadingDropdownDataAsync("Classes", school, grade, teacher);
         }
     }
 } 

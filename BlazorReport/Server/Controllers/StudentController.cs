@@ -194,62 +194,22 @@ namespace BlazorReport.Server.Controllers
             }
         }
 
-        [HttpGet("cascading-grades")]
-        public async Task<ActionResult<List<DropdownItem>>> GetCascadingGrades([FromQuery] string school = "All")
+        [HttpGet("cascading-dropdown/{level}")]
+        public async Task<ActionResult<List<DropdownItem>>> GetCascadingDropdownData(string level, [FromQuery] string? school = null, [FromQuery] string? grade = null, [FromQuery] string? teacher = null)
         {
             try
             {
-                _logger.LogInformation("Getting cascading grades for school: {School}", school);
+                _logger.LogInformation("Getting cascading dropdown data for level: {Level}, school: {School}, grade: {Grade}, teacher: {Teacher}", level, school, grade, teacher);
                 
-                var result = await _studentDataService.GetCascadingGradesAsync(school);
+                var result = await _studentDataService.GetCascadingDropdownDataAsync(level, school, grade, teacher);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting cascading grades for school: {School}", school);
+                _logger.LogError(ex, "Error getting cascading dropdown data for level: {Level}, school: {School}, grade: {Grade}, teacher: {Teacher}", level, school, grade, teacher);
                 return BadRequest(new List<DropdownItem> 
                 { 
-                    new DropdownItem { Value = "All", Text = "All Grades" } 
-                });
-            }
-        }
-
-        [HttpGet("cascading-teachers")]
-        public async Task<ActionResult<List<DropdownItem>>> GetCascadingTeachers([FromQuery] string school = "All", [FromQuery] string grade = "All")
-        {
-            try
-            {
-                _logger.LogInformation("Getting cascading teachers for school: {School}, grade: {Grade}", school, grade);
-                
-                var result = await _studentDataService.GetCascadingTeachersAsync(school, grade);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting cascading teachers for school: {School}, grade: {Grade}", school, grade);
-                return BadRequest(new List<DropdownItem> 
-                { 
-                    new DropdownItem { Value = "All", Text = "All Teachers" } 
-                });
-            }
-        }
-
-        [HttpGet("cascading-classes")]
-        public async Task<ActionResult<List<DropdownItem>>> GetCascadingClasses([FromQuery] string school = "All", [FromQuery] string grade = "All", [FromQuery] string teacher = "All")
-        {
-            try
-            {
-                _logger.LogInformation("Getting cascading classes for school: {School}, grade: {Grade}, teacher: {Teacher}", school, grade, teacher);
-                
-                var result = await _studentDataService.GetCascadingClassesAsync(school, grade, teacher);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting cascading classes for school: {School}, grade: {Grade}, teacher: {Teacher}", school, grade, teacher);
-                return BadRequest(new List<DropdownItem> 
-                { 
-                    new DropdownItem { Value = "All", Text = "All Classes" } 
+                    new DropdownItem { Value = "All", Text = $"All {level}" } 
                 });
             }
         }

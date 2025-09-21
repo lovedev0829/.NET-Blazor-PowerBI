@@ -1,4 +1,4 @@
-using BlazorReport.Shared;
+﻿using BlazorReport.Shared;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
@@ -14,10 +14,8 @@ namespace BlazorReport.Server.Services
         Task<StudentSearchResult> SearchStudentsByProgramAsync(string programType, string school, string grade);
         Task<Dictionary<string, string>> DiagnoseDatabaseAsync();
         
-        // Cascading dropdown methods
-        Task<List<DropdownItem>> GetCascadingGradesAsync(string school);
-        Task<List<DropdownItem>> GetCascadingTeachersAsync(string school, string grade);
-        Task<List<DropdownItem>> GetCascadingClassesAsync(string school, string grade, string teacher);
+        // Cascading dropdown method
+        Task<List<DropdownItem>> GetCascadingDropdownDataAsync(string level, string? school = null, string? grade = null, string? teacher = null);
     }
 
     public class StudentDataService : IStudentDataService
@@ -124,26 +122,75 @@ namespace BlazorReport.Server.Services
                 {
                     var student = new StudentInfo
                     {
-                        RowID = Convert.ToInt32(reader["RowID"]),
-                        Start_Year = reader.GetInt32("Start_Year"),
-                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : reader.GetInt32("LatestStudent") == 1,
-                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : Convert.ToInt32(reader["iDASHsid"]),
-                        LAST_NAME = reader.IsDBNull("LAST_NAME") ? "" : reader.GetString("LAST_NAME"),
-                        FIRST_NAME = reader.IsDBNull("FIRST_NAME") ? "" : reader.GetString("FIRST_NAME"),
-                        GRADE = reader.GetInt32("GRADE"),
-                        SCHOOLID = reader.GetInt32("SCHOOLID"),
-                        HOMEROOM = reader.IsDBNull("HOMEROOM") ? "" : reader.GetString("HOMEROOM"),
-                        SEX = reader.IsDBNull("SEX") ? "" : reader.GetString("SEX"),
-                        ETHNIC = reader.IsDBNull("ETHNIC") ? "" : reader.GetString("ETHNIC"),
-                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetString("SPECIAL_ED"),
-                        ESL_CODE = reader.IsDBNull("ESL_CODE") ? "" : reader.GetString("ESL_CODE"),
-                        FOOD_SERVICE_CODE = reader.IsDBNull("FOOD_SERVICE_CODE") ? null : reader.GetInt32("FOOD_SERVICE_CODE"),
-                        Home = reader.IsDBNull("Home") ? "" : reader.GetString("Home"),
-                        IS_504 = reader.IsDBNull("IS_504") ? "" : reader.GetString("IS_504"),
-                        SchoolName = reader.IsDBNull("SchoolName") ? "" : reader.GetString("SchoolName"),
-                        TeacherName = reader.IsDBNull("TeacherName") ? "" : reader.GetString("TeacherName"),
-                        ClassName = reader.IsDBNull("ClassName") ? "" : reader.GetString("ClassName")
-                    };
+                        RowID = reader.GetInt64(reader.GetOrdinal("RowID")),
+                        Start_Year = reader.GetInt32(reader.GetOrdinal("Start_Year")),
+                        LatestStudent = reader.IsDBNull(reader.GetOrdinal("LatestStudent"))
+                            ? (bool?)null
+                            : reader.GetInt32(reader.GetOrdinal("LatestStudent")) == 1,  // SQL returns int → convert to bool
+
+                                            iDASHsid = reader.IsDBNull(reader.GetOrdinal("iDASHsid"))
+                            ? null
+                            : reader[reader.GetOrdinal("iDASHsid")].ToString(),
+
+                                            LAST_NAME = reader.IsDBNull(reader.GetOrdinal("L_Name"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("L_Name")),
+
+                                            FIRST_NAME = reader.IsDBNull(reader.GetOrdinal("F_Name"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("F_Name")),
+
+                                            GRADE = reader.IsDBNull(reader.GetOrdinal("GRADE"))
+                            ? 0
+                            : Convert.ToInt32(reader["GRADE"]),  // tinyint → int
+
+                                            SCHOOLID = reader.IsDBNull(reader.GetOrdinal("SCHOOL"))
+                            ? 0
+                            : reader.GetInt32(reader.GetOrdinal("SCHOOL")),
+
+                                            HOMEROOM = reader.IsDBNull(reader.GetOrdinal("HOMEROOM"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("HOMEROOM")),
+
+                                            SEX = reader.IsDBNull(reader.GetOrdinal("SEX"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("SEX")),
+
+                                            ETHNIC = reader.IsDBNull(reader.GetOrdinal("ETHNIC"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("ETHNIC")),
+
+                                            SPECIAL_ED = reader.IsDBNull(reader.GetOrdinal("SPECIAL_ED"))
+                            ? string.Empty
+                            : reader[reader.GetOrdinal("SPECIAL_ED")].ToString(), // tinyint → string
+
+                                            ESL_CODE = reader.IsDBNull(reader.GetOrdinal("ESL_CODE"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("ESL_CODE")),
+
+                        FOOD_SERVICE_CODE = reader.IsDBNull(reader.GetOrdinal("FOOD_SERVICE_CODE")) ? string.Empty : reader.GetString(reader.GetOrdinal("FOOD_SERVICE_CODE")),
+
+                        Home = reader.IsDBNull(reader.GetOrdinal("Home"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("Home")),
+
+                                            IS_504 = reader.IsDBNull(reader.GetOrdinal("IS_504"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("IS_504")),
+
+                                            SchoolName = reader.IsDBNull(reader.GetOrdinal("SchoolName"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("SchoolName")),
+
+                                            TeacherName = reader.IsDBNull(reader.GetOrdinal("TeacherName"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("TeacherName")),
+
+                                            ClassName = reader.IsDBNull(reader.GetOrdinal("ClassName"))
+                            ? string.Empty
+                            : reader.GetString(reader.GetOrdinal("ClassName")),
+                                        };
+
 
                     result.Students.Add(student);
                 }
@@ -214,18 +261,19 @@ namespace BlazorReport.Server.Services
                     {
                         RowID = Convert.ToInt32(reader["RowID"]),
                         Start_Year = reader.GetInt32("Start_Year"),
-                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : reader.GetInt32("LatestStudent") == 1,
-                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : Convert.ToInt32(reader["iDASHsid"]),
-                        LAST_NAME = reader.IsDBNull("LAST_NAME") ? "" : reader.GetString("LAST_NAME"),
-                        FIRST_NAME = reader.IsDBNull("FIRST_NAME") ? "" : reader.GetString("FIRST_NAME"),
-                        GRADE = reader.GetInt32("GRADE"),
-                        SCHOOLID = reader.GetInt32("SCHOOLID"),
+                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : Convert.ToBoolean(reader.GetInt32("LatestStudent")),
+                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : reader.GetString("iDASHsid"),    
+                        LAST_NAME = reader.IsDBNull("L_Name") ? "" : reader.GetString("L_Name"),
+                        FIRST_NAME = reader.IsDBNull("F_name") ? "" : reader.GetString("F_name"),
+                        GRADE = reader.IsDBNull("GRADE") ? 0 : TryParseGrade(reader.GetString("GRADE")),
+                        SCHOOLID = reader.GetInt32("SCHOOL"),
                         HOMEROOM = reader.IsDBNull("HOMEROOM") ? "" : reader.GetString("HOMEROOM"),
                         SEX = reader.IsDBNull("SEX") ? "" : reader.GetString("SEX"),
                         ETHNIC = reader.IsDBNull("ETHNIC") ? "" : reader.GetString("ETHNIC"),
-                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetString("SPECIAL_ED"),
+                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetInt32("SPECIAL_ED").ToString(),
                         ESL_CODE = reader.IsDBNull("ESL_CODE") ? "" : reader.GetString("ESL_CODE"),
-                        FOOD_SERVICE_CODE = reader.IsDBNull("FOOD_SERVICE_CODE") ? null : reader.GetInt32("FOOD_SERVICE_CODE"),
+                        FOOD_SERVICE_CODE = reader.IsDBNull(reader.GetOrdinal("FOOD_SERVICE_CODE")) ? string.Empty : reader.GetString(reader.GetOrdinal("FOOD_SERVICE_CODE")),
+
                         Home = reader.IsDBNull("Home") ? "" : reader.GetString("Home"),
                         IS_504 = reader.IsDBNull("IS_504") ? "" : reader.GetString("IS_504"),
                         SchoolName = reader.IsDBNull("SchoolName") ? "" : reader.GetString("SchoolName"),
@@ -275,18 +323,18 @@ namespace BlazorReport.Server.Services
                     {
                         RowID = Convert.ToInt32(reader["RowID"]),
                         Start_Year = reader.GetInt32("Start_Year"),
-                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : reader.GetInt32("LatestStudent") == 1,
-                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : Convert.ToInt32(reader["iDASHsid"]),
-                        LAST_NAME = reader.IsDBNull("LAST_NAME") ? "" : reader.GetString("LAST_NAME"),
-                        FIRST_NAME = reader.IsDBNull("FIRST_NAME") ? "" : reader.GetString("FIRST_NAME"),
-                        GRADE = reader.GetInt32("GRADE"),
-                        SCHOOLID = reader.GetInt32("SCHOOLID"),
+                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : Convert.ToBoolean(reader.GetInt32("LatestStudent")),
+                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : reader.GetString("iDASHsid"),
+                        LAST_NAME = reader.IsDBNull("L_Name") ? "" : reader.GetString("L_Name"),
+                        FIRST_NAME = reader.IsDBNull("F_name") ? "" : reader.GetString("F_name"),
+                        GRADE = reader.IsDBNull("GRADE") ? 0 : TryParseGrade(reader.GetString("GRADE")),
+                        SCHOOLID = reader.GetInt32("SCHOOL"),
                         HOMEROOM = reader.IsDBNull("HOMEROOM") ? "" : reader.GetString("HOMEROOM"),
                         SEX = reader.IsDBNull("SEX") ? "" : reader.GetString("SEX"),
                         ETHNIC = reader.IsDBNull("ETHNIC") ? "" : reader.GetString("ETHNIC"),
-                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetString("SPECIAL_ED"),
+                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetInt32("SPECIAL_ED").ToString(),
                         ESL_CODE = reader.IsDBNull("ESL_CODE") ? "" : reader.GetString("ESL_CODE"),
-                        FOOD_SERVICE_CODE = reader.IsDBNull("FOOD_SERVICE_CODE") ? null : reader.GetInt32("FOOD_SERVICE_CODE"),
+                        FOOD_SERVICE_CODE = reader.IsDBNull(reader.GetOrdinal("FOOD_SERVICE_CODE")) ? string.Empty : reader.GetString(reader.GetOrdinal("FOOD_SERVICE_CODE")),
                         Home = reader.GetString("Home") ?? "",
                         IS_504 = reader.GetString("IS_504") ?? "",
                         SchoolName = reader.IsDBNull("SchoolName") ? "" : reader.GetString("SchoolName")
@@ -350,18 +398,18 @@ namespace BlazorReport.Server.Services
                     {
                         RowID = Convert.ToInt32(reader["RowID"]),
                         Start_Year = reader.GetInt32("Start_Year"),
-                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : reader.GetInt32("LatestStudent") == 1,
-                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : Convert.ToInt32(reader["iDASHsid"]),
-                        LAST_NAME = reader.IsDBNull("LAST_NAME") ? "" : reader.GetString("LAST_NAME"),
-                        FIRST_NAME = reader.IsDBNull("FIRST_NAME") ? "" : reader.GetString("FIRST_NAME"),
-                        GRADE = reader.GetInt32("GRADE"),
-                        SCHOOLID = reader.GetInt32("SCHOOLID"),
+                        LatestStudent = reader.IsDBNull("LatestStudent") ? null : Convert.ToBoolean(reader.GetInt32("LatestStudent")),
+                        iDASHsid = reader.IsDBNull("iDASHsid") ? null : reader.GetString("iDASHsid"),
+                        LAST_NAME = reader.IsDBNull("L_Name") ? "" : reader.GetString("L_Name"),
+                        FIRST_NAME = reader.IsDBNull("F_name") ? "" : reader.GetString("F_name"),
+                        GRADE = reader.IsDBNull("GRADE") ? 0 : TryParseGrade(reader.GetString("GRADE")),
+                        SCHOOLID = reader.GetInt32("SCHOOL"),
                         HOMEROOM = reader.IsDBNull("HOMEROOM") ? "" : reader.GetString("HOMEROOM"),
                         SEX = reader.IsDBNull("SEX") ? "" : reader.GetString("SEX"),
                         ETHNIC = reader.IsDBNull("ETHNIC") ? "" : reader.GetString("ETHNIC"),
-                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetString("SPECIAL_ED"),
+                        SPECIAL_ED = reader.IsDBNull("SPECIAL_ED") ? "" : reader.GetInt32("SPECIAL_ED").ToString(),
                         ESL_CODE = reader.IsDBNull("ESL_CODE") ? "" : reader.GetString("ESL_CODE"),
-                        FOOD_SERVICE_CODE = reader.IsDBNull("FOOD_SERVICE_CODE") ? null : reader.GetInt32("FOOD_SERVICE_CODE"),
+                        FOOD_SERVICE_CODE = reader.IsDBNull(reader.GetOrdinal("FOOD_SERVICE_CODE")) ? string.Empty : reader.GetString(reader.GetOrdinal("FOOD_SERVICE_CODE")),
                         Home = reader.IsDBNull("Home") ? "" : reader.GetString("Home"),
                         IS_504 = reader.IsDBNull("IS_504") ? "" : reader.GetString("IS_504"),
                         SchoolName = reader.IsDBNull("SchoolName") ? "" : reader.GetString("SchoolName"),
@@ -418,7 +466,7 @@ namespace BlazorReport.Server.Services
                 diagnostics["TableCount"] = tables.Count.ToString();
 
                 // Check specific required tables
-                diagnostics["ConsolidatedStudentBody"] = tables.Contains("ConsolidatedStudentBody") ? "EXISTS" : "MISSING";
+                diagnostics["Student"] = tables.Contains("Student") ? "EXISTS" : "MISSING";
                 diagnostics["Users"] = tables.Contains("Users") ? "EXISTS" : "MISSING";
                 diagnostics["TeacherSchedule"] = tables.Contains("TeacherSchedule") ? "EXISTS" : "MISSING";
                 diagnostics["TeacherStudentSchedule"] = tables.Contains("TeacherStudentSchedule") ? "EXISTS" : "MISSING";
@@ -433,27 +481,30 @@ namespace BlazorReport.Server.Services
             return diagnostics;
         }
 
-        public async Task<List<DropdownItem>> GetCascadingGradesAsync(string school)
+        public async Task<List<DropdownItem>> GetCascadingDropdownDataAsync(string level, string? school = null, string? grade = null, string? teacher = null)
         {
-            var grades = new List<DropdownItem>();
+            var items = new List<DropdownItem>();
 
             try
             {
                 using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                using var command = new SqlCommand("SP_GetCascadingGrades", connection)
+                using var command = new SqlCommand("SP_GetCascadingDropdownData", connection)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
 
-                command.Parameters.AddWithValue("@School", school);
+                command.Parameters.AddWithValue("@Level", level);
+                command.Parameters.AddWithValue("@School", school ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@Grade", grade ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@Teacher", teacher ?? (object)DBNull.Value);
 
                 using var reader = await command.ExecuteReaderAsync();
 
                 while (await reader.ReadAsync())
                 {
-                    grades.Add(new DropdownItem
+                    items.Add(new DropdownItem
                     {
                         Value = reader["Value"].ToString() ?? "",
                         Text = reader["Text"].ToString() ?? ""
@@ -462,89 +513,35 @@ namespace BlazorReport.Server.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting cascading grades for school: {School}", school);
+                _logger.LogError(ex, "Error getting cascading dropdown data for level: {Level}, school: {School}, grade: {Grade}, teacher: {Teacher}", 
+                    level, school, grade, teacher);
                 // Return at least "All" option on error
-                grades.Add(new DropdownItem { Value = "All", Text = "All Grades" });
+                items.Add(new DropdownItem { Value = "All", Text = $"All {level}" });
             }
 
-            return grades;
+            return items;
         }
 
-        public async Task<List<DropdownItem>> GetCascadingTeachersAsync(string school, string grade)
+        private static int TryParseGrade(string gradeValue)
         {
-            var teachers = new List<DropdownItem>();
-
-            try
+            // Handle cases like "Grade 03 Instruction" or just "3"
+            if (int.TryParse(gradeValue, out int numericGrade))
             {
-                using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
+                return numericGrade;
+            }
 
-                using var command = new SqlCommand("SP_GetCascadingTeachers", connection)
+            // Try to extract number from strings like "Grade 03 Instruction"
+            var parts = gradeValue.Split(' ');
+            foreach (var part in parts)
+            {
+                if (int.TryParse(part, out int extractedGrade))
                 {
-                    CommandType = CommandType.StoredProcedure
-                };
-
-                command.Parameters.AddWithValue("@School", school);
-                command.Parameters.AddWithValue("@Grade", grade);
-
-                using var reader = await command.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    teachers.Add(new DropdownItem
-                    {
-                        Value = reader["Value"].ToString() ?? "",
-                        Text = reader["Text"].ToString() ?? ""
-                    });
+                    return extractedGrade;
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting cascading teachers for school: {School}, grade: {Grade}", school, grade);
-                // Return at least "All" option on error
-                teachers.Add(new DropdownItem { Value = "All", Text = "All Teachers" });
-            }
 
-            return teachers;
-        }
-
-        public async Task<List<DropdownItem>> GetCascadingClassesAsync(string school, string grade, string teacher)
-        {
-            var classes = new List<DropdownItem>();
-
-            try
-            {
-                using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                using var command = new SqlCommand("SP_GetCascadingClasses", connection)
-                {
-                    CommandType = CommandType.StoredProcedure
-                };
-
-                command.Parameters.AddWithValue("@School", school);
-                command.Parameters.AddWithValue("@Grade", grade);
-                command.Parameters.AddWithValue("@Teacher", teacher);
-
-                using var reader = await command.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    classes.Add(new DropdownItem
-                    {
-                        Value = reader["Value"].ToString() ?? "",
-                        Text = reader["Text"].ToString() ?? ""
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting cascading classes for school: {School}, grade: {Grade}, teacher: {Teacher}", school, grade, teacher);
-                // Return at least "All" option on error
-                classes.Add(new DropdownItem { Value = "All", Text = "All Classes" });
-            }
-
-            return classes;
+            // Default to 0 if we can't parse
+            return 0;
         }
     }
 } 

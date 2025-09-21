@@ -2,13 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BlazorReport.Shared
 {
-    // ConsolidatedStudentBody table model
+    // Student table model
     public class StudentInfo
     {
-        public int RowID { get; set; }
+        public long RowID { get; set; }   // matches SQL bigint
         public int Start_Year { get; set; }
         public bool? LatestStudent { get; set; }
-        public int? iDASHsid { get; set; }
+        public string? iDASHsid { get; set; }
         public string LAST_NAME { get; set; } = string.Empty;
         public string FIRST_NAME { get; set; } = string.Empty;
         public int GRADE { get; set; }
@@ -18,7 +18,7 @@ namespace BlazorReport.Shared
         public string ETHNIC { get; set; } = string.Empty;
         public string SPECIAL_ED { get; set; } = string.Empty;
         public string ESL_CODE { get; set; } = string.Empty;
-        public int? FOOD_SERVICE_CODE { get; set; }
+        public string FOOD_SERVICE_CODE { get; set; } = string.Empty;
         public string Home { get; set; } = string.Empty;
         public string IS_504 { get; set; } = string.Empty;
         

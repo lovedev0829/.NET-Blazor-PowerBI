@@ -18,7 +18,7 @@ BEGIN
     
     BEGIN TRY
         SELECT 
-            u.EmployeeID,
+            u.employeeID,
             u.LastName,
             u.FirstName,
             u.Title,
@@ -27,12 +27,12 @@ BEGIN
             u.DashUserID,
             u.prem_act_stat,
             u.URole,
-            u.PersonID,
+            u.PersonIDChar as PersonID,
             u.PersonIDChar
         FROM dbo.Users u
         WHERE u.URole LIKE '%Teacher%' 
         OR u.URole LIKE '%Instructor%'
-        OR u.EmployeeID IS NOT NULL
+        OR u.employeeID IS NOT NULL
         ORDER BY u.LastName, u.FirstName;
         
     END TRY
@@ -57,27 +57,27 @@ BEGIN
     
     BEGIN TRY
         SELECT 
-            ts.id,
+            ROW_NUMBER() OVER (ORDER BY ts.DASH_CID) as id,
             ts.DASH_CID,
             ts.START_YY,
             ts.SCHOOL,
             ts.SHORT_NAME,
-            ts.CLASS_CD,
+            ts.L as CLASS_CD,
             ts.SECTION,
             ts.SEMESTER,
-            ts.PERIOD,
+            ts.DAYS as PERIOD,
             ts.DAYS,
             ts.EmployeeID,
             u.FirstName + ' ' + u.LastName AS TeacherName,
-            COUNT(tss.idashsid) AS StudentCount
+            COUNT(ss.idashsid) AS StudentCount
         FROM dbo.TeacherSchedule ts
-        LEFT JOIN dbo.Users u ON ts.EmployeeID = u.EmployeeID
-        LEFT JOIN dbo.TeacherStudentSchedule tss ON ts.DASH_CID = tss.DASH_CID
+        LEFT JOIN dbo.Users u ON ts.EmployeeID = u.employeeID
+        LEFT JOIN dbo.StudentSchedule ss ON ts.DASH_CID = ss.DASH_CID
         WHERE ts.EmployeeID = @EmployeeID
-        GROUP BY ts.id, ts.DASH_CID, ts.START_YY, ts.SCHOOL, ts.SHORT_NAME, 
-                 ts.CLASS_CD, ts.SECTION, ts.SEMESTER, ts.PERIOD, ts.DAYS, 
+        GROUP BY ts.DASH_CID, ts.START_YY, ts.SCHOOL, ts.SHORT_NAME, 
+                 ts.L, ts.SECTION, ts.SEMESTER, ts.DAYS, 
                  ts.EmployeeID, u.FirstName, u.LastName
-        ORDER BY ts.PERIOD, ts.SHORT_NAME;
+        ORDER BY ts.DAYS, ts.SHORT_NAME;
         
     END TRY
     BEGIN CATCH
@@ -101,7 +101,7 @@ BEGIN
     
     BEGIN TRY
         SELECT 
-            u.EmployeeID,
+            u.employeeID,
             u.LastName,
             u.FirstName,
             u.Title,
@@ -110,10 +110,10 @@ BEGIN
             u.DashUserID,
             u.prem_act_stat,
             u.URole,
-            u.PersonID,
+            u.PersonIDChar as PersonID,
             u.PersonIDChar
         FROM dbo.Users u
-        WHERE u.EmployeeID = @EmployeeID;
+        WHERE u.employeeID = @EmployeeID;
         
     END TRY
     BEGIN CATCH
@@ -142,7 +142,7 @@ BEGIN
         FROM dbo.Users u
         WHERE u.School IS NOT NULL 
         AND u.School != ''
-        ORDER BY u.School;
+        ORDER BY Value;
         
         -- Subjects (from TeacherSchedule)
         SELECT DISTINCT 
@@ -151,21 +151,17 @@ BEGIN
         FROM dbo.TeacherSchedule ts
         WHERE ts.SHORT_NAME IS NOT NULL 
         AND ts.SHORT_NAME != ''
-        ORDER BY ts.SHORT_NAME;
+        ORDER BY Value;
         
-        -- Grades (based on classes taught)
+        -- Grades (based on classes taught) - FIXED: Handle string values
         SELECT DISTINCT 
-            CAST(s.GRADE AS VARCHAR(10)) AS Value,
-            CASE 
-                WHEN s.GRADE = -1 THEN 'Pre-K'
-                WHEN s.GRADE = 0 THEN 'Kindergarten'
-                ELSE 'Grade ' + CAST(s.GRADE AS VARCHAR(10))
-            END AS Text
+            CAST(s.GRADE AS NVARCHAR(50)) AS Value,
+            CAST(s.GRADE AS NVARCHAR(50)) AS Text
         FROM dbo.Student s
-        INNER JOIN dbo.TeacherStudentSchedule tss ON s.StudentID = tss.idashsid
-        INNER JOIN dbo.TeacherSchedule ts ON tss.DASH_CID = ts.DASH_CID
+        INNER JOIN dbo.StudentSchedule ss ON s.StuNum = ss.idashsid
+        INNER JOIN dbo.TeacherSchedule ts ON ss.DASH_CID = ts.DASH_CID
         WHERE s.GRADE IS NOT NULL
-        ORDER BY CAST(s.GRADE AS VARCHAR(10));
+        ORDER BY Value;
         
     END TRY
     BEGIN CATCH
@@ -188,18 +184,22 @@ BEGIN
     
     BEGIN TRY
         SELECT 
-            u.EmployeeID,
+            u.employeeID,
             u.FirstName + ' ' + u.LastName AS TeacherName,
             u.School,
-            COUNT(DISTINCT ts.id) AS TotalClasses,
-            COUNT(DISTINCT tss.idashsid) AS TotalStudents,
-            AVG(CAST(COUNT(tss.idashsid) AS FLOAT)) AS AvgStudentsPerClass,
+            COUNT(DISTINCT ts.DASH_CID) AS TotalClasses,
+            COUNT(DISTINCT ss.idashsid) AS TotalStudents,
+            CASE 
+                WHEN COUNT(DISTINCT ts.DASH_CID) > 0 
+                THEN CAST(COUNT(DISTINCT ss.idashsid) AS FLOAT) / COUNT(DISTINCT ts.DASH_CID)
+                ELSE 0 
+            END AS AvgStudentsPerClass,
             STRING_AGG(ts.SHORT_NAME, ', ') AS SubjectsTaught
         FROM dbo.Users u
-        LEFT JOIN dbo.TeacherSchedule ts ON u.EmployeeID = ts.EmployeeID
-        LEFT JOIN dbo.TeacherStudentSchedule tss ON ts.DASH_CID = tss.DASH_CID
+        LEFT JOIN dbo.TeacherSchedule ts ON u.employeeID = ts.EmployeeID
+        LEFT JOIN dbo.StudentSchedule ss ON ts.DASH_CID = ss.DASH_CID
         WHERE u.URole LIKE '%Teacher%' OR u.URole LIKE '%Instructor%'
-        GROUP BY u.EmployeeID, u.FirstName, u.LastName, u.School
+        GROUP BY u.employeeID, u.FirstName, u.LastName, u.School
         ORDER BY TotalStudents DESC, u.LastName, u.FirstName;
         
     END TRY
@@ -224,19 +224,19 @@ BEGIN
     
     BEGIN TRY
         SELECT DISTINCT
-            s.StudentID,
-            s.FIRST_NAME,
-            s.LAST_NAME,
-            s.GRADE,
+            s.StuNum AS StudentID,
+            s.F_name,
+            s.L_Name,
+            CAST(s.GRADE AS NVARCHAR(50)) AS GRADE,
             s.HOMEROOM,
             ts.SHORT_NAME AS ClassName,
-            ts.PERIOD,
+            ts.DAYS as PERIOD,
             ts.SEMESTER
         FROM dbo.Student s
-        INNER JOIN dbo.TeacherStudentSchedule tss ON s.StudentID = tss.idashsid
-        INNER JOIN dbo.TeacherSchedule ts ON tss.DASH_CID = ts.DASH_CID
+        INNER JOIN dbo.StudentSchedule ss ON s.StuNum = ss.idashsid
+        INNER JOIN dbo.TeacherSchedule ts ON ss.DASH_CID = ts.DASH_CID
         WHERE ts.EmployeeID = @EmployeeID
-        ORDER BY ts.PERIOD, s.LAST_NAME, s.FIRST_NAME;
+        ORDER BY ts.DAYS, s.L_Name, s.F_name;
         
     END TRY
     BEGIN CATCH
