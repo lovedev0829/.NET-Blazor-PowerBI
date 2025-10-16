@@ -258,3 +258,58 @@ BEGIN
     END
 END
 GO
+
+-- Stored Procedure to search students by program type (ESL, SPED, etc.)
+IF OBJECT_ID('dbo.SP_SearchStudentsByProgram', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.SP_SearchStudentsByProgram;
+GO
+
+CREATE PROCEDURE [dbo].[SP_SearchStudentsByProgram]
+    @ProgramType NVARCHAR(50),
+    @School NVARCHAR(50) = 'All',
+    @Grade NVARCHAR(50) = 'All'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT DISTINCT
+        ROW_NUMBER() OVER (ORDER BY s.L_Name, s.F_name) AS RowID,
+        YEAR(GETDATE()) AS Start_Year,
+        1 AS LatestStudent,
+        s.StuNum AS iDASHsid,
+        s.L_Name,
+        s.F_name,
+        CAST(s.GRADE AS NVARCHAR(50)) AS GRADE,
+        s.SCHOOL,
+        s.HOMEROOM,
+        s.SEX,
+        s.ETHNIC,
+        s.SPECIAL_ED,
+        s.ESL_CODE,
+        s.FOOD_SERVICE_CODE,
+        s.Home,
+        s.IS_504,
+        -- Additional fields for display
+        CASE s.SCHOOL 
+            WHEN 1 THEN 'Elementary School'
+            WHEN 2 THEN 'Middle School' 
+            WHEN 3 THEN 'High School'
+            ELSE 'School ' + CAST(s.SCHOOL AS NVARCHAR(10))
+        END AS SchoolName,
+        COALESCE(u.FirstName + ' ' + u.LastName, '') AS TeacherName,
+        COALESCE(ts.SHORT_NAME, '') AS ClassName
+    FROM Student s
+    LEFT JOIN StudentSchedule ss ON s.StuNum = ss.idashsid
+    LEFT JOIN TeacherSchedule ts ON ss.DASH_CID = ts.DASH_CID
+    LEFT JOIN Users u ON ts.EmployeeID = u.employeeID
+    WHERE 1 = 1
+        AND (@School = 'All' OR CAST(s.SCHOOL AS NVARCHAR(50)) = @School)
+        AND (@Grade = 'All' OR CAST(s.GRADE AS NVARCHAR(50)) = @Grade)
+        AND (
+            (@ProgramType = 'ESL' AND s.ESL_CODE IS NOT NULL AND s.ESL_CODE != '')
+            OR (@ProgramType = 'SPED' AND s.SPECIAL_ED IS NOT NULL AND s.SPECIAL_ED != '')
+            OR (@ProgramType = '504' AND s.IS_504 IS NOT NULL AND s.IS_504 != '')
+        )
+    ORDER BY s.L_Name, s.F_name
+END
+GO

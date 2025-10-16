@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddTransient<IUserDatabase, UserDatabase>();  // NOTE: LOCAL AUTHENTICATION ADDED HERE; AddTransient() IS OK TO USE BECAUSE STATE IS SAVED TO THE DRIVE
 builder.Services.AddScoped<IStudentDataService, StudentDataService>(); // Student data service for database operations
-builder.Services.AddScoped<ITeacherDataService, TeacherDataService>(); // Teacher data service for database operations
+//builder.Services.AddScoped<AssessmentDataService>(); // Assessment data service for dashboard charts
 
 // NOTE: the following block of code is newly added
 builder.Services.AddAuthentication(options =>

@@ -1,12 +1,13 @@
 @page "/student"
 @using BlazorReport.Shared
+@using System.Linq
 @inject StudentService studentService
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Student Search</PageTitle>
 
 <div class="container-fluid">
-    <TelerikTabStrip ActiveTabIndex="0">
+    <TelerikTabStrip>
         <TabStripTab Title="By Class Roster">
             <Content>
                 <div class="row mt-3">
@@ -23,37 +24,38 @@
                                     <div class="col-md-3">
                                         <label class="form-label">School</label>
                                         <TelerikDropDownList Data="@dropdownData.Schools"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           Value="@searchCriteria.School"
-                                                           ValueChanged="@((string value) => OnSchoolChanged(value))"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             Value="@searchCriteria.School"
+                                                             ValueChanged="@((string value) => OnSchoolChanged(value))"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Grade</label>
                                         <TelerikDropDownList Data="@dropdownData.Grades"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           Value="@searchCriteria.Grade"
-                                                           ValueChanged="@((string value) => OnGradeChanged(value))"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             Value="@searchCriteria.Grade"
+                                                             ValueChanged="@((string value) => OnGradeChanged(value))"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Teacher</label>
                                         <TelerikDropDownList Data="@dropdownData.Teachers"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           Value="@searchCriteria.Teacher"
-                                                           ValueChanged="@((string value) => OnTeacherChanged(value))"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             Value="@searchCriteria.Teacher"
+                                                             ValueChanged="@((string value) => OnTeacherChanged(value))"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Class</label>
                                         <TelerikDropDownList Data="@dropdownData.Classes"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@searchCriteria.Class"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             Value="@searchCriteria.Class"
+                                                             ValueChanged="@((string value) => OnClassChanged(value))"
+                                                             Class="form-control" />
                                     </div>
                                 </div>
 
@@ -61,10 +63,7 @@
                                     <div class="col-12">
                                         <h6 class="text-primary">Students Found: <span class="text-danger">@studentsFound</span></h6>
                                         <div class="mt-3">
-                                            <button @onclick="UpdateStudentCount" class="btn btn-info me-2">
-                                                Search Students
-                                            </button>
-                                            <button @onclick="ViewStudentList" class="btn btn-primary" >
+                                            <button @onclick="ViewStudentList" class="btn btn-primary">
                                                 View Student List
                                             </button>
                                         </div>
@@ -99,12 +98,12 @@
                                     <div class="mb-2"><strong>Found:</strong> @studentsFound students</div>
 
                                     <TelerikGrid Data="@searchResult.Students"
-                                               Pageable="true"
-                                               PageSize="50"
-                                               Sortable="true"
-                                               FilterMode="@GridFilterMode.FilterRow"
-                                               Resizable="true"
-                                               Class="table-striped">
+                                                 Pageable="true"
+                                                 PageSize="50"
+                                                 Sortable="true"
+                                                 FilterMode="@GridFilterMode.FilterRow"
+                                                 Resizable="true"
+                                                 Class="table-striped">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(StudentInfo.FullName)" Title="Student Name" Width="180px" />
                                             <GridColumn Field="@nameof(StudentInfo.GRADE)" Title="Grade" Width="80px" />
@@ -140,16 +139,16 @@
                                     <div class="col-md-3">
                                         <label class="form-label">Search Type</label>
                                         <TelerikDropDownList Data="@searchTypes"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@individualSearchCriteria.SearchType"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@individualSearchCriteria.SearchType"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Search Term</label>
                                         <input type="text" @bind="individualSearchCriteria.SearchTerm"
                                                @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchIndividualStudent(); })"
-                                               class="form-control" 
+                                               class="form-control"
                                                placeholder="Enter name, ID, email, or homeroom..." />
                                     </div>
                                     <div class="col-md-3">
@@ -174,12 +173,12 @@
                                     <div class="mt-4">
                                         <h6 class="text-primary mb-3">Search Results</h6>
                                         <TelerikGrid Data="@individualSearchResult.Students"
-                                                   Pageable="true"
-                                                   PageSize="20"
-                                                   Sortable="true"
-                                                   FilterMode="@GridFilterMode.FilterRow"
-                                                   Resizable="true"
-                                                   Class="table-striped">
+                                                     Pageable="true"
+                                                     PageSize="20"
+                                                     Sortable="true"
+                                                     FilterMode="@GridFilterMode.FilterRow"
+                                                     Resizable="true"
+                                                     Class="table-striped">
                                             <GridColumns>
                                                 <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
                                                 <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
@@ -223,18 +222,18 @@
                                     <div class="col-md-6">
                                         <label class="form-label">School</label>
                                         <TelerikDropDownList Data="@dropdownData.Schools"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@eslSearchSchool"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@eslSearchSchool"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Grade</label>
                                         <TelerikDropDownList Data="@dropdownData.Grades"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@eslSearchGrade"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@eslSearchGrade"
+                                                             Class="form-control" />
                                     </div>
                                 </div>
 
@@ -253,12 +252,12 @@
                                 {
                                     <div class="mt-4">
                                         <TelerikGrid Data="@eslSearchResult.Students"
-                                                   Pageable="true"
-                                                   PageSize="20"
-                                                   Sortable="true"
-                                                   FilterMode="@GridFilterMode.FilterRow"
-                                                   Resizable="true"
-                                                   Class="table-striped">
+                                                     Pageable="true"
+                                                     PageSize="20"
+                                                     Sortable="true"
+                                                     FilterMode="@GridFilterMode.FilterRow"
+                                                     Resizable="true"
+                                                     Class="table-striped">
                                             <GridColumns>
                                                 <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
                                                 <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
@@ -292,18 +291,18 @@
                                     <div class="col-md-6">
                                         <label class="form-label">School</label>
                                         <TelerikDropDownList Data="@dropdownData.Schools"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@spedSearchSchool"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@spedSearchSchool"
+                                                             Class="form-control" />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Grade</label>
                                         <TelerikDropDownList Data="@dropdownData.Grades"
-                                                           TextField="Text"
-                                                           ValueField="Value"
-                                                           @bind-Value="@spedSearchGrade"
-                                                           Class="form-control" />
+                                                             TextField="Text"
+                                                             ValueField="Value"
+                                                             @bind-Value="@spedSearchGrade"
+                                                             Class="form-control" />
                                     </div>
                                 </div>
 
@@ -322,12 +321,12 @@
                                 {
                                     <div class="mt-4">
                                         <TelerikGrid Data="@spedSearchResult.Students"
-                                                   Pageable="true"
-                                                   PageSize="20"
-                                                   Sortable="true"
-                                                   FilterMode="@GridFilterMode.FilterRow"
-                                                   Resizable="true"
-                                                   Class="table-striped">
+                                                     Pageable="true"
+                                                     PageSize="20"
+                                                     Sortable="true"
+                                                     FilterMode="@GridFilterMode.FilterRow"
+                                                     Resizable="true"
+                                                     Class="table-striped">
                                             <GridColumns>
                                                 <GridColumn Field="@nameof(StudentInfo.LAST_NAME)" Title="Last Name" Width="120px" />
                                                 <GridColumn Field="@nameof(StudentInfo.FIRST_NAME)" Title="First Name" Width="120px" />
@@ -408,7 +407,7 @@
             if (data != null)
             {
                 dropdownData = data;
-                
+
                 // "All" options are already included in the stored procedure results
                 // No need to add them here - this was causing duplicates
             }
@@ -427,21 +426,32 @@
     private async Task OnSchoolChanged(string school)
     {
         searchCriteria.School = school;
-        
+
         // Reset dependent dropdowns to "All"
         searchCriteria.Grade = "All";
         searchCriteria.Teacher = "All";
         searchCriteria.Class = "All";
-        
+
         // Load grades for selected school
         try
         {
             isLoading = true;
             dropdownData.Grades = await studentService.GetCascadingGradesAsync(school);
-            
-            // Reset teachers and classes to show only "All" option
-            dropdownData.Teachers = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Teachers" } };
-            dropdownData.Classes = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
+
+            // If a specific school is selected (not "All"), auto-select the first available grade
+            if (school != "All" && dropdownData.Grades?.Any() == true)
+            {
+                var firstGrade = dropdownData.Grades.FirstOrDefault(g => g.Value != "All");
+                if (firstGrade != null)
+                {
+                    searchCriteria.Grade = firstGrade.Value;
+                }
+            }
+
+            // Reset teachers and classes using cascading service
+            dropdownData.Teachers = await studentService.GetCascadingTeachersAsync(school, searchCriteria.Grade);
+            dropdownData.Classes = await studentService.GetCascadingClassesAsync(school, searchCriteria.Grade, "All");
+            await UpdateStudentCount();
         }
         catch (Exception ex)
         {
@@ -451,26 +461,28 @@
         {
             isLoading = false;
         }
-        
+
         StateHasChanged();
     }
 
     private async Task OnGradeChanged(string grade)
     {
         searchCriteria.Grade = grade;
-        
+
         // Reset dependent dropdowns to "All"
         searchCriteria.Teacher = "All";
         searchCriteria.Class = "All";
-        
+
         // Load teachers for selected school and grade
         try
         {
             isLoading = true;
             dropdownData.Teachers = await studentService.GetCascadingTeachersAsync(searchCriteria.School, grade);
-            
-            // Reset classes to show only "All" option
-            dropdownData.Classes = new List<DropdownItem> { new DropdownItem { Value = "All", Text = "All Classes" } };
+
+            // Reset classes using cascading service
+            dropdownData.Classes = await studentService.GetCascadingClassesAsync(searchCriteria.School, grade, "All");
+            await UpdateStudentCount();
+
         }
         catch (Exception ex)
         {
@@ -480,22 +492,30 @@
         {
             isLoading = false;
         }
-        
+
         StateHasChanged();
     }
 
     private async Task OnTeacherChanged(string teacher)
     {
         searchCriteria.Teacher = teacher;
-        
+
         // Reset dependent dropdown to "All"
         searchCriteria.Class = "All";
-        
+
         // Load classes for selected school, grade, and teacher
         try
         {
             isLoading = true;
-            dropdownData.Classes = await studentService.GetCascadingClassesAsync(searchCriteria.School, searchCriteria.Grade, teacher);
+            if (teacher != "All")
+            {
+                dropdownData.Classes = await studentService.GetCascadingClassesAsync(searchCriteria.School, searchCriteria.Grade, teacher);
+            }
+            else
+            {
+                dropdownData.Classes = await studentService.GetCascadingClassesAsync(searchCriteria.School, searchCriteria.Grade, "All");
+            }
+            await UpdateStudentCount();
         }
         catch (Exception ex)
         {
@@ -505,13 +525,18 @@
         {
             isLoading = false;
         }
-        
+
         StateHasChanged();
+    }
+
+    private async Task OnClassChanged(string clsses)
+    {
+        searchCriteria.Class = clsses;
+        await UpdateStudentCount();
     }
 
     private async Task UpdateStudentCount()
     {
-        isLoading = true;
         try
         {
             studentsFound = await studentService.GetStudentCountAsync(searchCriteria);
@@ -521,29 +546,25 @@
             Console.WriteLine($"Error getting student count: {ex.Message}");
             studentsFound = 0;
         }
-        finally
-        {
-            isLoading = false;
-        }
     }
 
     private async Task ViewStudentList()
     {
-       
-            isLoading = true;
-            try
-            {
-                searchResult = await studentService.SearchStudentsAsync(searchCriteria);
-                showStudentList = true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error searching students: {ex.Message}");
-            }
-            finally
-            {
-                isLoading = false;
-            }
+
+        isLoading = true;
+        try
+        {
+            searchResult = await studentService.SearchStudentsAsync(searchCriteria);
+            showStudentList = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error searching students: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void ChangeSelectionCriteria()
@@ -567,7 +588,7 @@
         try
         {
             individualSearchResult = await studentService.SearchIndividualStudentAsync(individualSearchCriteria);
-            
+
             if (individualSearchResult.Success)
             {
                 individualSearchMessage = $"Found {individualSearchResult.TotalCount} student(s) matching '{individualSearchCriteria.SearchTerm}'";

@@ -11,7 +11,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PowerBIService>();
 builder.Services.AddScoped<StudentService>();
-//builder.Services.AddScoped<TeacherService>();
+//builder.Services.AddScoped<AssessmentService>();
 
 // Add Telerik Blazor server side services
 builder.Services.AddTelerikBlazor();

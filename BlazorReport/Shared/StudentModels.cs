@@ -89,13 +89,6 @@ namespace BlazorReport.Shared
         public string Class { get; set; } = "All";
     }
 
-    public class TeacherSearchCriteria
-    {
-        public string School { get; set; } = "All";
-        public string Subject { get; set; } = "All";
-        public string Grade { get; set; } = "All";
-        public string Status { get; set; } = "All";
-    }
 
     // Result models
     public class StudentSearchResult
@@ -106,21 +99,6 @@ namespace BlazorReport.Shared
         public string Message { get; set; } = string.Empty;
     }
 
-    public class TeacherSearchResult
-    {
-        public List<TeacherInfo> Teachers { get; set; } = new();
-        public int TotalCount { get; set; }
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class TeacherScheduleResult
-    {
-        public List<TeacherSchedule> Schedules { get; set; } = new();
-        public int TotalCount { get; set; }
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
 
     // Dropdown data models
     public class DropdownData
@@ -161,5 +139,49 @@ namespace BlazorReport.Shared
         public string Period { get; set; } = string.Empty;
         public string Days { get; set; } = string.Empty;
         public string Semester { get; set; } = string.Empty;
+    }
+
+    // Assessment Models for Dashboard Charts
+    public class AssessmentData
+    {
+        public int Id { get; set; }
+        public string AssessmentType { get; set; } = string.Empty; // SBA, NGSS
+        public string Subject { get; set; } = string.Empty; // ELA, Math, Science
+        public int Grade { get; set; }
+        public string AcademicYear { get; set; } = string.Empty; // 2018-19, 2023-24, 2024-25
+        public string DataCategory { get; set; } = string.Empty; // Meeting or Exceeding Goal, High Needs
+        public string Region { get; set; } = string.Empty; // Darien, DRG Avg, State Avg
+        public decimal Percentage { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+    }
+
+    public class AssessmentChartData
+    {
+        public string AcademicYear { get; set; } = string.Empty;
+        public decimal Darien { get; set; }
+        public decimal DRGAvg { get; set; }
+        public decimal StateAvg { get; set; }
+    }
+
+    public class AssessmentHighNeedsData
+    {
+        public string AcademicYear { get; set; } = string.Empty;
+        public decimal Value { get; set; }
+    }
+
+    public class AssessmentDashboardData
+    {
+        public List<AssessmentChartData> ELA_General { get; set; } = new();
+        public List<AssessmentHighNeedsData> ELA_HighNeeds { get; set; } = new();
+        public List<AssessmentChartData> Math_General { get; set; } = new();
+        public List<AssessmentHighNeedsData> Math_HighNeeds { get; set; } = new();
+    }
+
+    public class AssessmentSearchCriteria
+    {
+        public string AssessmentType { get; set; } = "SBA";
+        public int Grade { get; set; } = 3;
+        public string Subject { get; set; } = "All"; // ELA, Math, All
     }
 } 
